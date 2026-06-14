@@ -1,47 +1,38 @@
 # Untitled Project
 
-> Enterprise-grade REST API with PostgreSQL backend, JWT authentication, and responsive frontend
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green.svg)](https://fastapi.tiangolo.com/)
-
----
+A production-ready REST API application with FastAPI, PostgreSQL, and JWT authentication.
 
 ## Business Problem Solved
 
-This project addresses the need for a scalable, production-ready web application with secure authentication, robust data persistence, and a modern responsive interface. 
+This project provides a robust, scalable backend API infrastructure that can be customized for various business requirements. It solves the common challenges of:
 
-**Key Problems Solved:**
+- **Authentication & Authorization**: Secure JWT-based authentication system with password hashing using bcrypt
+- **Database Management**: PostgreSQL with SQLAlchemy ORM, Alembic migrations, and connection pooling
+- **API Architecture**: RESTful endpoints with versioning, proper error handling, and validation
+- **Production Ready**: Docker containerization with health checks, CORS support, and logging
+- **Code Quality**: Unit tests, type hints, and consistent project structure
 
-| Problem | Solution |
-|---------|----------|
-| Secure user authentication | JWT-based auth with bcrypt password hashing |
-| Data persistence and reliability | PostgreSQL with connection pooling and migrations |
-| Scalable API architecture | RESTful endpoints with versioned routes (/api/v1/) |
-| Production deployment | Docker containerization with docker-compose |
-| Code quality and testing | Unit tests with pytest, type hints throughout |
-| Error handling and logging | Structured middleware for requests/responses |
-| CORS and API accessibility | Configurable CORS middleware |
+## Tech Stack
 
-**Business Value Delivered:**
-- Secure, enterprise-grade authentication system protecting user data
-- RESTful API architecture enabling easy integrations and third-party access
-- PostgreSQL backend with proper indexing for optimal query performance
-- Docker-based deployment ensuring consistency across environments
-- Comprehensive documentation enabling rapid onboarding for new developers
-
----
+| Component | Technology |
+|-----------|------------|
+| Backend | Python 3.11+ / FastAPI |
+| Database | PostgreSQL 15+ |
+| ORM | SQLAlchemy 2.0 |
+| Migrations | Alembic |
+| Authentication | JWT (python-jose) + bcrypt |
+| Testing | pytest |
+| Container | Docker / Docker Compose |
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.11+
-- PostgreSQL 14+
-- Docker & Docker Compose (for containerized development)
+- PostgreSQL 15+
+- Docker & Docker Compose (optional)
 - Git
 
 ### Environment Setup
 
-1. **Clone the repository:**
+1. **Clone the repository**
