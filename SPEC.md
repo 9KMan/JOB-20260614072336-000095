@@ -1,83 +1,104 @@
-# Specification: Untitled Project
+# Specification: B2B Compliance SaaS
 
 ## 1. Project Overview
 
-**Project:** Untitled Project
+**Project:** B2B Compliance SaaS — XML/PDF Processing + Rules Engine
 **GitHub Repo:** https://github.com/9KMan/JOB-20260614072336-000095
 **Lead:** https://www.upwork.com/jobs/~022065867000701624462
-**Client:** Upwork Client
 **Tier:** EXPERT
 **Budget:** EUR 4,000 (fixed-price, 6 milestones)
-**Rate:** N/A
-**Timeline:** 4-8 weeks
+**Timeline:** 6 milestones
 
 ## 2. Technical Stack
 
-TBD
+- **Backend:** Python + FastAPI
+- **Frontend:** React + TypeScript
+- **Database:** PostgreSQL
+- **Queue:** Celery + Redis (separate heavy/light queues)
+- **Storage:** AWS S3
+- **Auth:** Supabase or Auth0 (behind adapter module)
+- **Payments:** Stripe (trial, plans, proration, webhooks, cancellation)
+- **Hosting:** AWS or Azure
 
 ## 3. Architecture
 
-- Backend: REST API with appropriate framework
-- Database: PostgreSQL with schema design
-- Frontend: Responsive web application
-- Auth: JWT-based authentication
+### Core Processing Pipeline
+```
+Upload → FastAPI → S3 → Celery Worker → Streaming Parser → Rules Engine → PostgreSQL
+                                                                              ↓
+                                                              React Dashboard ← REST API
+                                                                              ↓
+                                                                  Stripe Billing
+```
 
-### API Design
-- RESTful endpoints with JSON request/response
-- Authentication via JWT (HS256) or bcrypt
-- Middleware for logging, error handling, CORS
-- Versioned routes (/api/v1/...) where applicable
-
-### Data Layer
-- PostgreSQL as primary datastore
-- Connection pooling via PGBouncer or similar
-- Migration management via Alembic or raw SQL
-- Indexes on foreign keys and high-cardinality columns
-
-### Frontend (if applicable)
-- Single-page application or server-rendered pages
-- Responsive UI with modern CSS/JS framework
-- State management for complex client-side logic
+### Key Architecture Decisions
+- **Streaming XML Parser (lxml iterparse):** O(1) memory, handles 500+ MB files per document type
+- **Two distinct XML formats** per document type (documented in spec workbooks)
+- **PDF parsing:** Extract embedded XML, route to same rules engine
+- **Celery heavy queue:** Large file parsing (500+ MB)
+- **Celery light queue:** Dashboard queries (prevents large jobs blocking UI)
+- **170 reconciliation rules:** Rule evaluator classes with configurable thresholds
+- **Multi-tenant PostgreSQL:** RLS + repository pattern with mandatory tenant filter
+- **Stripe billing:** Trial → plan → proration → webhooks → cancellation
 
 ## 4. Data Model
 
 ### Core Entities
-- Define entity schema based on job requirements
-- Use UUIDs for primary keys (not auto-increment)
-- Add created_at / updated_at timestamps to all tables
-- Soft-delete pattern where appropriate
+- **Tenant** — client account with data isolation
+- **Document** — uploaded XML/PDF with tenant_id, type, period, version
+- **Transaction** — parsed rows from XML, batch-inserted with chunked commits
+- **RuleViolation** — document IDs, rule ID, amount delta, severity, tenant-scoped
+- **Job** — Celery job tracking with parse_cursor for resumable parsing
+- **Subscription** — Stripe customer + subscription state
 
-### Relationships
-- Foreign key constraints with ON DELETE CASCADE
-- Many-to-many via junction tables
-- Eager loading for nested relationships in API
+### Tenant Isolation
+- RLS at DB layer: `USING (tenant_id = current_setting('app.current_tenant')::uuid)`
+- Repository pattern: tenant_id mandatory on every query path
+- FastAPI dependency injection: `Depends(get_current_tenant)` on every route
 
 ## 5. Project Structure
 
 ```
-├── api/                  # FastAPI / Express routes + schemas
-├── models/               # DB models / SQLAlchemy / Prisma
-├── services/             # Business logic layer
-├── workers/              # Background jobs (Celery, BullMQ, etc.)
-├── migrations/           # DB migrations (Alembic / Flyway)
-├── tests/                # Unit + integration tests
-├── Dockerfile            # Production container
-├── docker-compose.yml    # Local dev environment
-└── README.md             # Setup instructions
+app/
+├── api/v1/
+│   ├── documents.py     # upload, status, list
+│   ├── rules.py         # rule config, thresholds
+│   ├── violations.py    # drill-down results
+│   ├── subscriptions.py # Stripe webhook handler
+│   └── exports.py       # Excel/PDF export
+├── core/
+│   ├── auth.py          # Auth0/Supabase adapter
+│   ├── db.py            # connection + RLS session
+│   └── config.py        # env vars
+├── models/             # SQLAlchemy models + RLS policies
+├── repositories/       # tenant-scoped data access
+├── services/
+│   ├── parser.py        # streaming XML/PDF parsers
+│   ├── rules_engine.py  # 170 reconciliation rule evaluators
+│   └── celery_app.py   # Celery config, heavy/light queues
+├── worker/
+│   └── tasks.py         # parse_document, apply_rules
+└── dashboard/
+    ├── components/      # React dashboard components
+    └── pages/           # upload, results, analytics
 ```
 
-## 6. Out of Scope
+## 6. Milestones
 
-- Mobile apps (web only unless explicitly specified)
-- Multi-tenant / white-label customization
-- Performance optimization at 1M+ user scale
+| # | Milestone | Key Deliverable |
+|---|---|---|
+| M1 | Core API + Auth | FastAPI skeleton, Auth adapter, tenant model |
+| M2 | **Payment Gate** | Live 500+ MB XML iterparse + memory profile proof |
+| M3 | XML/PDF Parsing | Both XML formats, PDF extraction, S3 integration |
+| M4 | Rules Engine | 170 rules, configurable thresholds, violation records |
+| M5 | Dashboard + Exports | React dashboard, pagination, Excel/PDF export |
+| M6 | Stripe + Polish | Subscriptions, webhooks, 70% coverage, static analysis |
 
 ## 7. Acceptance Criteria
 
-- [ ] Application builds and runs without errors
-- [ ] Core functionality implemented as described
-- [ ] Basic unit tests for key features
-- [ ] README with setup instructions
-- [ ] Docker configuration for deployment
-
-**GitHub Repo:** https://github.com/9KMan/JOB-20260614072336-000095
+- [ ] Milestone 2 memory gate: 500+ MB XML parses with <200MB resident memory
+- [ ] All 170 reconciliation rules implemented and individually testable
+- [ ] Multi-tenant RLS enforced at DB layer — no cross-tenant data leakage
+- [ ] Stripe trial → paid flow end-to-end
+- [ ] 70% test coverage on business logic
+- [ ] Static analysis: zero critical findings
